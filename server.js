@@ -1,7 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
+
 const productRoutes = require("./routes/product.routes");
+const reportRoutes = require("./routes/report.routes");
 
 const app = express();
 
@@ -12,7 +14,6 @@ app.use(cors({
 
 app.use(express.json());
 
-// SESSION (FIXED FOR PRODUCTION)
 app.use(session({
     secret: "shop-secret-key",
     resave: false,
@@ -31,13 +32,13 @@ app.post("/login", (req, res) => {
         return res.json({ success: true });
     }
 
-    res.status(401).json({ success: false, message: "Invalid credentials" });
+    res.status(401).json({ success: false });
 });
 
-// LOGOUT (FIXED)
+// LOGOUT
 app.post("/logout", (req, res) => {
     req.session.destroy(() => {
-        res.json({ message: "Logged out successfully" });
+        res.json({ message: "Logged out" });
     });
 });
 
@@ -49,13 +50,13 @@ function checkAuth(req, res, next) {
     next();
 }
 
-// STATIC FILES
+// STATIC
 app.use(express.static("public"));
 
 // ROUTES
 app.use("/products", checkAuth, productRoutes);
+app.use("/reports", checkAuth, reportRoutes);
 
-// START SERVER
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
