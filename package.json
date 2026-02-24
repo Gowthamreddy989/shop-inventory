@@ -1,7 +1,7 @@
 {
   "name": "shop-inventory",
   "version": "1.0.0",
-  "description": "Shop Inventory System",
+  "description": "",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
