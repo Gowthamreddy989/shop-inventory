@@ -1,80 +1,60 @@
 const express = require("express");
 const router = express.Router();
+const db = require("../database");
 
-// In-memory storage for demo (replace with SQLite if needed)
-let products = [];
-let salesHistory = [];
-
-// GET PRODUCTS
+// GET ALL PRODUCTS
 router.get("/", (req, res) => {
+    const products = db.prepare("SELECT * FROM products").all();
     res.json(products);
 });
 
 // ADD PRODUCT
 router.post("/", (req, res) => {
     const { name, cost_price, selling_price, quantity } = req.body;
-    const id = products.length + 1;
-    products.push({ id, name, cost_price, selling_price, quantity });
-    res.json({ message: "Product added", id });
+
+    db.prepare(`
+        INSERT INTO products (name, cost_price, selling_price, quantity)
+        VALUES (?, ?, ?, ?)
+    `).run(name, cost_price, selling_price, quantity);
+
+    res.json({ message: "Product added successfully" });
 });
 
-// SELL PRODUCT
-router.post("/sales", (req, res) => {
+// SELL PRODUCT  ✅ FIXED
+router.post("/sell", (req, res) => {
     const { product_id, quantity } = req.body;
-    const product = products.find(p => p.id === product_id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
-    if (product.quantity < quantity) return res.status(400).json({ message: "Not enough stock" });
 
-    product.quantity -= quantity;
-    const profit = (product.selling_price - product.cost_price) * quantity;
-    salesHistory.push({ product_id, quantity, profit, date: new Date() });
+    const product = db.prepare(
+        "SELECT * FROM products WHERE id = ?"
+    ).get(product_id);
 
-    res.json({ message: "Sale recorded", profit });
+    if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+    }
+
+    if (product.quantity < quantity) {
+        return res.status(400).json({ message: "Not enough stock" });
+    }
+
+    // Reduce stock
+    db.prepare(
+        "UPDATE products SET quantity = quantity - ? WHERE id = ?"
+    ).run(quantity, product_id);
+
+    res.json({ message: "Product sold successfully" });
 });
 
 // PURCHASE / RESTOCK
 router.post("/purchase", (req, res) => {
     const { product_id, quantity, cost_price } = req.body;
-    const product = products.find(p => p.id === product_id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
 
-    product.quantity += quantity;
-    product.cost_price = cost_price;
-    res.json({ message: "Stock updated" });
-});
+    db.prepare(`
+        UPDATE products
+        SET quantity = quantity + ?, cost_price = ?
+        WHERE id = ?
+    `).run(quantity, cost_price, product_id);
 
-// REPORTS
-router.get("/reports/daily", (req, res) => {
-    const today = new Date().toDateString();
-    const filtered = salesHistory.filter(s => new Date(s.date).toDateString() === today);
-
-    const total_sales = filtered.reduce((a, b) => a + (products.find(p => p.id === b.product_id).selling_price * b.quantity), 0);
-    const total_profit = filtered.reduce((a, b) => a + b.profit, 0);
-
-    res.json({ total_sales, total_profit });
-});
-
-router.get("/reports/monthly", (req, res) => {
-    const now = new Date();
-    const filtered = salesHistory.filter(s => {
-        const d = new Date(s.date);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-
-    const total_sales = filtered.reduce((a, b) => a + (products.find(p => p.id === b.product_id).selling_price * b.quantity), 0);
-    const total_profit = filtered.reduce((a, b) => a + b.profit, 0);
-
-    res.json({ total_sales, total_profit });
-});
-
-router.get("/reports/yearly", (req, res) => {
-    const now = new Date();
-    const filtered = salesHistory.filter(s => new Date(s.date).getFullYear() === now.getFullYear());
-
-    const total_sales = filtered.reduce((a, b) => a + (products.find(p => p.id === b.product_id).selling_price * b.quantity), 0);
-    const total_profit = filtered.reduce((a, b) => a + b.profit, 0);
-
-    res.json({ total_sales, total_profit });
+    res.json({ message: "Stock updated successfully" });
 });
 
 module.exports = router;
