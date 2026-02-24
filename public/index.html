@@ -72,163 +72,121 @@
 </div>
 
 <script>
-const API = "http://localhost:5000";
 
-/* ADD PRODUCT */
-async function addProduct() {
-    const data = {
-        name: document.getElementById("name").value,
-        cost_price: Number(document.getElementById("cost").value),
-        selling_price: Number(document.getElementById("selling").value),
-        quantity: Number(document.getElementById("quantity").value)
-    };
-
-    await fetch(API + "/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-    });
-
-    alert("Product Added!");
-    loadProducts();
-}
-
-/* SELL PRODUCT */
-async function sellProduct() {
-    const data = {
-        product_id: Number(document.getElementById("sell_id").value),
-        quantity: Number(document.getElementById("sell_qty").value)
-    };
-
-    const res = await fetch(API + "/sales", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-    });
-
-    const result = await res.json();
-    alert(result.message);
-    loadProducts();
-    loadChart();
-}
-
-/* PURCHASE PRODUCT */
-async function purchaseProduct() {
-    const data = {
-        product_id: Number(document.getElementById("purchase_id").value),
-        quantity: Number(document.getElementById("purchase_qty").value),
-        cost_price: Number(document.getElementById("purchase_cost").value)
-    };
-
-    const res = await fetch(API + "/purchase", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-    });
-
-    const result = await res.json();
-    alert(result.message);
-    loadProducts();
-}
-
-/* LOAD PRODUCTS WITH LOW STOCK ALERT + TOTAL VALUE */
-async function loadProducts() {
-    const res = await fetch(API + "/products");
-    const products = await res.json();
-
-    const table = document.getElementById("productTable");
-    table.innerHTML = "";
-
-    let totalStockValue = 0;
-
-    products.forEach(p => {
-
-        totalStockValue += p.quantity * p.cost_price;
-
-        const lowStockClass = p.quantity < 10 ? "table-danger" : "";
-
-        table.innerHTML += `
-            <tr class="${lowStockClass}">
-                <td>${p.id}</td>
-                <td>${p.name}</td>
-                <td>${p.quantity}</td>
-                <td>${p.cost_price}</td>
-                <td>${p.selling_price}</td>
-            </tr>
-        `;
-    });
-
-    document.getElementById("reportResult").innerHTML =
-        `<strong>Total Stock Value:</strong> ₹${totalStockValue}`;
-}
-
-/* REPORTS */
-async function loadDaily() {
-    const res = await fetch(API + "/reports/daily");
-    const data = await res.json();
-
-    document.getElementById("reportResult").innerHTML = `
-        <strong>Daily Report:</strong><br>
-        Total Sales: ₹${data.total_sales}<br>
-        Total Profit: ₹${data.total_profit}
-    `;
-}
-
-async function loadMonthly() {
-    const res = await fetch(API + "/reports/monthly");
-    const data = await res.json();
-
-    document.getElementById("reportResult").innerHTML = `
-        <strong>Monthly Report:</strong><br>
-        Total Sales: ₹${data.total_sales}<br>
-        Total Profit: ₹${data.total_profit}
-    `;
-}
-
-async function loadYearly() {
-    const res = await fetch(API + "/reports/yearly");
-    const data = await res.json();
-
-    document.getElementById("reportResult").innerHTML = `
-        <strong>Yearly Report:</strong><br>
-        Total Sales: ₹${data.total_sales}<br>
-        Total Profit: ₹${data.total_profit}
-    `;
-}
-
-/* MONTHLY SALES CHART */
-let chart;
-
-async function loadChart() {
-    const res = await fetch(API + "/reports/monthly");
-    const data = await res.json();
-
-    const ctx = document.getElementById("salesChart");
-
-    if (chart) {
-        chart.destroy();
+    const API = ""; // VERY IMPORTANT (works for deployed app)
+    
+    /* ADD PRODUCT */
+    async function addProduct() {
+        const data = {
+            name: document.getElementById("name").value,
+            cost_price: Number(document.getElementById("cost").value),
+            selling_price: Number(document.getElementById("selling").value),
+            quantity: Number(document.getElementById("quantity").value)
+        };
+    
+        await fetch(API + "/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(data)
+        });
+    
+        alert("Product Added!");
+        loadProducts();
     }
-
-    chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Sales', 'Profit'],
-            datasets: [{
-                label: 'Monthly Report',
-                data: [data.total_sales, data.total_profit]
-            }]
+    
+    /* SELL PRODUCT */
+    async function sellProduct() {
+        const data = {
+            product_id: Number(document.getElementById("sell_id").value),
+            quantity: Number(document.getElementById("sell_qty").value)
+        };
+    
+        const res = await fetch(API + "/products/sell", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(data)
+        });
+    
+        const result = await res.json();
+        alert(result.message);
+        loadProducts();
+        loadChart();
+    }
+    
+    /* PURCHASE PRODUCT */
+    async function purchaseProduct() {
+        const data = {
+            product_id: Number(document.getElementById("purchase_id").value),
+            quantity: Number(document.getElementById("purchase_qty").value),
+            cost_price: Number(document.getElementById("purchase_cost").value)
+        };
+    
+        const res = await fetch(API + "/products/purchase", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(data)
+        });
+    
+        const result = await res.json();
+        alert(result.message);
+        loadProducts();
+    }
+    
+    /* LOAD PRODUCTS */
+    async function loadProducts() {
+        const res = await fetch(API + "/products", {
+            credentials: "include"
+        });
+    
+        if (res.status === 401) {
+            window.location.href = "/login.html";
+            return;
         }
-    });
-}
-
-loadProducts();
-loadChart();
-
-async function logout() {
-    await fetch("http://localhost:5000/logout");
-    window.location.href = "/login.html";
-}
-</script>
+    
+        const products = await res.json();
+    
+        const table = document.getElementById("productTable");
+        table.innerHTML = "";
+    
+        let totalStockValue = 0;
+    
+        products.forEach(p => {
+    
+            totalStockValue += p.quantity * p.cost_price;
+    
+            const lowStockClass = p.quantity < 10 ? "table-danger" : "";
+    
+            table.innerHTML += `
+                <tr class="${lowStockClass}">
+                    <td>${p.id}</td>
+                    <td>${p.name}</td>
+                    <td>${p.quantity}</td>
+                    <td>${p.cost_price}</td>
+                    <td>${p.selling_price}</td>
+                </tr>
+            `;
+        });
+    
+        document.getElementById("reportResult").innerHTML =
+            `<strong>Total Stock Value:</strong> ₹${totalStockValue}`;
+    }
+    
+    /* LOGOUT */
+    async function logout() {
+        await fetch(API + "/logout", {
+            method: "POST",
+            credentials: "include"
+        });
+    
+        window.location.href = "/login.html";
+    }
+    
+    loadProducts();
+    
+    </script>
 
 </body>
 </html>
