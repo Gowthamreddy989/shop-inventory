@@ -4,6 +4,7 @@ const session = require("express-session");
 
 const productRoutes = require("./routes/product.routes");
 const reportRoutes = require("./routes/report.routes");
+const salesRoutes = require("./routes/sales.routes"); // ✅ ADD THIS
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use(express.static("public"));
 
 // ROUTES
 app.use("/products", checkAuth, productRoutes);
+app.use("/sales", checkAuth, salesRoutes);   // ✅ ADD THIS
 app.use("/reports", checkAuth, reportRoutes);
 
 const PORT = process.env.PORT || 5000;
